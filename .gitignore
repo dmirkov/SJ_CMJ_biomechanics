@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+.venv/
+*.egg-info/
+.eggs/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Backup - ne prebacujemo
+Backup_Fajlovi/
+Backup_Fajlovi.zip
+
+# Output (plotovi, Excel) - moze se regenerisati
+Output/
+
+# Podaci - kopiraju se rucno na drugi racunar
+SJ_ForcePlates/
+CMJ_ForcePlates/
+SJ_Qualisys/
+CMJ_Qualisys/
+SJ_Qualisys_CoM/
+CMJ_Qualisys_CoM/
+processed_data/
+
+# Ostalo
+*.log
+.DS_Store
+Thumbs.db
