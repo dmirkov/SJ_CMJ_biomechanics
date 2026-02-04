@@ -17,7 +17,7 @@ from pathlib import Path
 from scipy.interpolate import interp1d
 import matplotlib.pyplot as plt
 
-sys.path.insert(0, str(Path(__file__).parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from calculate_fp_kpis import (
     read_force_file, analyze_jump, butter_lowpass_filter,
     calculate_body_weight_robust, CONFIG

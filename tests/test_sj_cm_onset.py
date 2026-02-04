@@ -15,7 +15,7 @@ from scipy.integrate import cumulative_trapezoid
 from scipy.signal import butter, filtfilt
 
 # Import funkcije iz calculate_fp_kpis.py
-sys.path.insert(0, str(Path(__file__).parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from calculate_fp_kpis import (
     read_force_file, calculate_body_weight_robust,
     butter_lowpass_filter, CONFIG
