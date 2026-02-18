@@ -22,7 +22,7 @@ import matplotlib.pyplot as plt
 sys.path.insert(0, str(Path(__file__).parent))
 from calculate_fp_kpis import (
     read_force_file, analyze_jump, butter_lowpass_filter,
-    calculate_body_weight_robust, CONFIG
+    calculate_body_weight_robust, detect_fp_onset_unweighting, CONFIG
 )
 from scipy.integrate import cumulative_trapezoid
 
@@ -77,6 +77,8 @@ def get_fp_velocity_onset_to_land(fp_path: Path, jump_type: int):
     m = analyze_jump(force, raw_L, raw_R, fs, jump_type, fp_path.stem)
     if m is None:
         return None
+    if jump_type == 1 and m.get('has_countermovement', False):
+        return None
 
     idx_abs_min = np.argmin(force)
     bw, bw_sd = calculate_body_weight_robust(force, fs, idx_abs_min)
@@ -116,13 +118,17 @@ def get_fp_velocity_onset_to_land(fp_path: Path, jump_type: int):
                 idx_A_abs = i
                 break
     else:
-        unweight_min = np.argmin(force[:propulsion_peak_abs]) if propulsion_peak_abs > 0 else 0
-        thresh = bw - 5 * bw_sd
-        idx_A_abs = unweight_min
-        for i in range(unweight_min, -1, -1):
-            if force[i] >= thresh:
-                idx_A_abs = i
-                break
+        robust_onset = detect_fp_onset_unweighting(force, fs=fs)
+        if robust_onset is not None:
+            idx_A_abs = robust_onset
+        else:
+            unweight_min = np.argmin(force[:propulsion_peak_abs]) if propulsion_peak_abs > 0 else 0
+            thresh = bw - 5 * bw_sd
+            idx_A_abs = unweight_min
+            for i in range(unweight_min, -1, -1):
+                if force[i] >= thresh:
+                    idx_A_abs = i
+                    break
 
     # Segment: ONSET do LAND (ne posle)
     start_crop = max(0, idx_A_abs - 50)

@@ -122,7 +122,7 @@ def analyze_qc_flags(excel_file: Path):
 
 
 def main():
-    base_path = Path(__file__).parent
+    base_path = Path(__file__).parent.parent
     excel_file = base_path / "Output" / "Excel" / "MoCap_KPIs.xlsx"
     
     if not excel_file.exists():

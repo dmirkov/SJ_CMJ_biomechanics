@@ -57,7 +57,7 @@ def cleanup_tsv_file(filepath, backup=True):
     return backup_path if backup else None
 
 def main():
-    base_path = Path(__file__).parent
+    base_path = Path(__file__).parent.parent
     
     cmj_folder = base_path / "CMJ_Qualisys"
     sj_folder = base_path / "SJ_Qualisys"

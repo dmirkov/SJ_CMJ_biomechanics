@@ -13,7 +13,7 @@ from pathlib import Path
 def organize_backups():
     """Premjesti sve backup fajlove"""
     
-    base_path = Path(__file__).parent
+    base_path = Path(__file__).parent.parent
     backup_folder = base_path / "Backup_Fajlovi"
     
     # Kreiraj Backup_Fajlovi folder ako ne postoji
@@ -45,7 +45,7 @@ def organize_backups():
 def verify_organization():
     """Verificira da su backup-i pravilno organizovani"""
     
-    base_path = Path(__file__).parent
+    base_path = Path(__file__).parent.parent
     
     cmj_folder = base_path / "CMJ_Qualisys"
     sj_folder = base_path / "SJ_Qualisys"

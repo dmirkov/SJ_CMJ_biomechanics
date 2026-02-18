@@ -54,7 +54,7 @@ def analyze_consistency(folder_path):
     return results
 
 def main():
-    base_path = Path(__file__).parent
+    base_path = Path(__file__).parent.parent
     cmj_folder = base_path / "CMJ_Qualisys"
     sj_folder = base_path / "SJ_Qualisys"
     

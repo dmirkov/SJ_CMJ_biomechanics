@@ -17,10 +17,10 @@ from pathlib import Path
 from scipy.interpolate import interp1d
 import matplotlib.pyplot as plt
 
-sys.path.insert(0, str(Path(__file__).parent))
+sys.path.insert(0, str(Path(__file__).parent.parent))
 from calculate_fp_kpis import (
     read_force_file, analyze_jump, butter_lowpass_filter,
-    calculate_body_weight_robust, CONFIG
+    calculate_body_weight_robust, detect_fp_onset_unweighting, CONFIG
 )
 from scipy.integrate import cumulative_trapezoid
 
@@ -77,13 +77,17 @@ def get_fp_velocity_with_timings(fp_path: Path, jump_type: int):
                 idx_A_abs = i
                 break
     else:
-        unweight_min = np.argmin(force[:propulsion_peak_abs]) if propulsion_peak_abs > 0 else 0
-        thresh = bw - 5 * bw_sd
-        idx_A_abs = unweight_min
-        for i in range(unweight_min, -1, -1):
-            if force[i] >= thresh:
-                idx_A_abs = i
-                break
+        robust_onset = detect_fp_onset_unweighting(force, fs=fs)
+        if robust_onset is not None:
+            idx_A_abs = robust_onset
+        else:
+            unweight_min = np.argmin(force[:propulsion_peak_abs]) if propulsion_peak_abs > 0 else 0
+            thresh = bw - 5 * bw_sd
+            idx_A_abs = unweight_min
+            for i in range(unweight_min, -1, -1):
+                if force[i] >= thresh:
+                    idx_A_abs = i
+                    break
 
     start_crop = max(0, idx_A_abs - 50)
     end_crop = idx_H_abs + 50
@@ -222,7 +226,7 @@ def get_qualisys_segment_to_zero(tsv_path: Path, t_onset_to_peak: float, t_peak_
 
 
 def main():
-    base = Path(__file__).parent
+    base = Path(__file__).parent.parent
     # Primer: CMJ 02_4_1
     basename = "02_4_1"
     jump_type = 2  # CMJ

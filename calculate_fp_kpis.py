@@ -29,6 +29,103 @@ CONFIG = {
 }
 
 
+def _mad(x):
+    """Median Absolute Deviation."""
+    x = np.asarray(x, float)
+    med = np.nanmedian(x)
+    return np.nanmedian(np.abs(x - med))
+
+
+def _robust_sigma_mad(x):
+    """Robust SD estimate: 1.4826 * MAD."""
+    return 1.4826 * _mad(x)
+
+
+def _first_sustained(mask, min_len):
+    """Return first index i such that mask[i:i+min_len] are all True."""
+    mask = np.asarray(mask, bool)
+    if mask.size < min_len:
+        return None
+    run = np.convolve(mask.astype(int), np.ones(min_len, dtype=int), mode="valid")
+    hit = np.where(run == min_len)[0]
+    return int(hit[0]) if hit.size else None
+
+
+def _pick_quiet_baseline(force, fs, start_s=0.2, win_s=1.0, search_end_s=2.2):
+    """Pick the quietest baseline window by minimizing RMS around the median."""
+    f = np.asarray(force, float)
+    n = f.size
+    i0 = int(round(start_s * fs))
+    i_end = int(round(min(search_end_s * fs, n - 1)))
+    w = int(round(win_s * fs))
+    w = max(w, 50)
+
+    if i_end - i0 < w + 5:
+        return max(0, i0), min(n, i0 + w)
+
+    best_i = i0
+    best_val = np.inf
+    for i in range(i0, i_end - w):
+        seg = f[i:i + w]
+        if not np.isfinite(seg).all():
+            continue
+        m = np.median(seg)
+        rms = np.sqrt(np.mean((seg - m) ** 2))
+        if rms < best_val:
+            best_val = rms
+            best_i = i
+
+    return best_i, best_i + w
+
+
+def detect_fp_onset_unweighting(
+    force,
+    fs=1000,
+    baseline_start_s=0.2,
+    baseline_win_s=1.0,
+    baseline_search_end_s=2.2,
+    k_sigma=5.0,
+    floor_frac_bw=0.02,
+    floor_N=20.0,
+    persist_s=0.04,
+):
+    """
+    Robust force-plate CMJ onset (start of unweighting):
+    earliest time after baseline where Fz < BW - T for >= persist_s.
+    T = max(k_sigma*sigma, floor_frac_bw*BW, floor_N)
+    """
+    f = np.asarray(force, float)
+    n = f.size
+    if n < int(fs * 0.5):
+        return None
+
+    b0, b1 = _pick_quiet_baseline(
+        f, fs,
+        start_s=baseline_start_s,
+        win_s=baseline_win_s,
+        search_end_s=baseline_search_end_s
+    )
+    base = f[b0:b1]
+    BW = float(np.median(base))
+
+    fnet_base = base - BW
+    sigma = float(_robust_sigma_mad(fnet_base))
+
+    T = max(k_sigma * sigma, floor_frac_bw * BW, floor_N)
+
+    persist = max(3, int(round(persist_s * fs)))
+    start_idx = b1
+
+    mask = np.zeros(n, dtype=bool)
+    mask[start_idx:] = f[start_idx:] < (BW - T)
+
+    idx = _first_sustained(mask, persist)
+    if idx is None:
+        return None
+
+    return idx
+
+
 def butter_lowpass_filter(data, cutoff, fs, order=2):
     """Apply a zero-lag Butterworth low-pass filter."""
     nyquist = 0.5 * fs
@@ -388,49 +485,42 @@ def analyze_jump(f_tot_raw, f_L_raw, f_R_raw, fs, jump_type, file_id):
                 pass
         
     else:  # CMJ (Countermovement Jump)
-        # NOVA LOGIKA: Prema korisnikovim specifikacijama
-        # Redosled: početak signala (quiet) → onset → unweighting/unloading min → propulsion peak → TO → flight min
-        # 1. Apsolutni minimum je već pronađen (idx_abs_min) - to je flight faza
-        # 2. Nađi maksimum od početka signala do minimuma (propulsion peak - max sila pre TO)
-        # 3. Nađi minimum između početka i propulsion peak-a (unweighting/unloading minimum)
-        # 4. Od unweighting/unloading minimuma idi unazad (ka početku) i nađi prvu tačku gde je F >= BW - 5*SD
-        
-        # Korak 2: Nađi maksimum od početka do minimuma (propulsion peak)
-        if idx_abs_min > 0 and idx_abs_min < len(force):
-            segment_to_min = force[:idx_abs_min]
-            if len(segment_to_min) > 0:
-                propulsion_peak_abs = np.argmax(segment_to_min)
+        # ROBUST ONSET: MAD-based, persistence, threshold floors
+        robust_onset = detect_fp_onset_unweighting(force, fs=fs)
+        if robust_onset is not None:
+            idx_A_abs = robust_onset
+        else:
+            # Fallback na staru logiku ako robust ne nadje onset
+            if idx_abs_min > 0 and idx_abs_min < len(force):
+                segment_to_min = force[:idx_abs_min]
+                propulsion_peak_abs = np.argmax(segment_to_min) if len(segment_to_min) > 0 else 0
             else:
                 propulsion_peak_abs = 0
-        else:
-            propulsion_peak_abs = 0
-        
-        # Korak 3: Nađi minimum između početka i propulsion peak-a (unweighting/unloading minimum)
-        if propulsion_peak_abs > 0:
-            segment_to_peak = force[:propulsion_peak_abs]
-            if len(segment_to_peak) > 0:
-                unweighting_min_abs = np.argmin(segment_to_peak)
+            if propulsion_peak_abs > 0:
+                segment_to_peak = force[:propulsion_peak_abs]
+                unweighting_min_abs = np.argmin(segment_to_peak) if len(segment_to_peak) > 0 else 0
             else:
                 unweighting_min_abs = 0
+            threshold_cmj = bw - (5 * bw_sd)
+            idx_A_abs = unweighting_min_abs
+            for i in range(unweighting_min_abs, -1, -1):
+                if force[i] >= threshold_cmj:
+                    idx_A_abs = i
+                    break
+            if idx_A_abs == unweighting_min_abs:
+                idx_A_abs = 0
+
+        # Unweighting min (B): između onset-a i propulsion peaka
+        if idx_abs_min > 0 and idx_abs_min < len(force):
+            segment_to_min = force[:idx_abs_min]
+            propulsion_peak_abs = np.argmax(segment_to_min) if len(segment_to_min) > 0 else 0
         else:
-            unweighting_min_abs = 0
-        
-        # Korak 4: Od unweighting/unloading minimuma idi unazad (ka početku signala)
-        # i nađi prvu tačku gde je F >= BW - 5*SD
-        threshold_cmj = bw - (5 * bw_sd)
-        idx_A_abs = unweighting_min_abs  # Počni od unweighting/unloading minimuma
-        
-        # Traži unazad od unweighting/unloading minimuma do početka signala
-        # Traži prvu tačku (idući unazad) gde je F >= BW - 5*SD
-        for i in range(unweighting_min_abs, -1, -1):
-            if force[i] >= threshold_cmj:
-                idx_A_abs = i
-                break
-        
-        # Ako nismo našli (što ne bi trebalo da se desi), koristi početak signala
-        if idx_A_abs == unweighting_min_abs:
-            # Fallback: koristi početak signala
-            idx_A_abs = 0
+            propulsion_peak_abs = 0
+        if propulsion_peak_abs > idx_A_abs:
+            segment_between = force[idx_A_abs:propulsion_peak_abs]
+            unweighting_min_abs = idx_A_abs + np.argmin(segment_between) if len(segment_between) > 0 else idx_A_abs
+        else:
+            unweighting_min_abs = idx_A_abs
     
     # E. Cropping oko skoka (za dalju analizu i integraciju)
     # Cropuj oko onset-a i landing-a sa padding-om
@@ -953,6 +1043,11 @@ def process_force_plate_files(fp_dir: Path, jump_type_name: str):
         # Proveri da li je analiza uspešna (možda je BW invalid)
         if metrics is None:
             print(f"  [SKIP] {filepath.name}: Invalid BW or analysis failed")
+            continue
+
+        # SJ sa countermovement-om: iskljuci iz analize
+        if file_info['JumpType'] == 1 and metrics.get('has_countermovement', False):
+            print(f"  [SKIP] {filepath.name}: SJ sa countermovement-om - iskljuceno iz analize")
             continue
         
         # Kreiraj red za Excel

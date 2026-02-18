@@ -55,7 +55,7 @@ def run_step(step_name, script_name, description):
         return False
 
 def main():
-    base_path = Path(__file__).parent
+    base_path = Path(__file__).parent.parent
     
     print("\n" + "=" * 90)
     print("TSV STANDARDIZACIJA - GLAVNI SKRIPT")

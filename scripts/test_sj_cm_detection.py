@@ -182,7 +182,7 @@ def test_sj_cm_detection(filepath: Path):
     plt.tight_layout()
     
     # Sačuvaj plot
-    output_dir = Path(__file__).parent / "Output" / "SJ_CM_Detection"
+    output_dir = Path(__file__).parent.parent / "Output" / "SJ_CM_Detection"
     output_dir.mkdir(parents=True, exist_ok=True)
     output_file = output_dir / f"{filepath.stem}_cm_detection.png"
     plt.savefig(output_file, dpi=150, bbox_inches='tight')
@@ -194,7 +194,7 @@ def test_sj_cm_detection(filepath: Path):
 
 
 def main():
-    base_path = Path(__file__).parent
+    base_path = Path(__file__).parent.parent
     sj_fp_dir = base_path / "SJ_ForcePlates"
     
     # Testiraj prvi fajl koji ima countermovement

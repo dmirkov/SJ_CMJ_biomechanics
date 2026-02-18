@@ -215,7 +215,7 @@ def test_velocity_at_onset(filepath: Path):
     plt.tight_layout()
     
     # Sačuvaj plot
-    output_dir = Path(__file__).parent / "Output" / "Velocity_Onset_Test"
+    output_dir = Path(__file__).parent.parent / "Output" / "Velocity_Onset_Test"
     output_dir.mkdir(parents=True, exist_ok=True)
     output_file = output_dir / f"{filepath.stem}_velocity_at_onset.png"
     plt.savefig(output_file, dpi=150, bbox_inches='tight')
@@ -225,7 +225,7 @@ def test_velocity_at_onset(filepath: Path):
 
 
 def main():
-    base_path = Path(__file__).parent
+    base_path = Path(__file__).parent.parent
     sj_fp_dir = base_path / "SJ_ForcePlates"
     
     # Testiraj 01_3_1

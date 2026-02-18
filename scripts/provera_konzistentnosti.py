@@ -195,7 +195,7 @@ def analyze_folder(folder_path):
     }
 
 if __name__ == '__main__':
-    base_path = Path(__file__).parent
+    base_path = Path(__file__).parent.parent
     
     print("="*80)
     print("PROVERA KONZISTENTNOSTI TSV FAJLOVA")

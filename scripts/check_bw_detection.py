@@ -234,7 +234,7 @@ def analyze_bw_detection(filepath: Path, jump_type: int, output_dir: Path):
 
 
 def main():
-    base_path = Path(__file__).parent
+    base_path = Path(__file__).parent.parent
     
     # Input folderi
     sj_fp_dir = Path(r"C:\Users\dmirk\A_Cursor_Projekti\SJ_CMJ_Qualisys_AMTI\SJ_ForcePlates")
