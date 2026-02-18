@@ -2,9 +2,12 @@
 Test skripta za proveru da li je brzina na onset-u zaista 0 za SJ sa countermovement-om.
 """
 
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 import numpy as np
 import matplotlib.pyplot as plt
-from pathlib import Path
 from calculate_fp_kpis import (
     read_force_file, calculate_body_weight_robust, butter_lowpass_filter, CONFIG, analyze_jump
 )

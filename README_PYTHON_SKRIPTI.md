@@ -107,7 +107,7 @@ C:/Users/dmirk/anaconda3/python.exe run_standardization.py
 ## 📁 Struktura Foldera (nakon standardizacije)
 
 ```
-SJ_CMJ_Original_files/
+SJ_CMJ_biomechanics/
 ├── CMJ_Qualisys/              (60 standardizovanih TSV fajlova)
 ├── SJ_Qualisys/               (72 standardizovanih TSV fajlova)
 ├── Backup_Fajlovi/            (132 backup fajlova)
@@ -116,9 +116,10 @@ SJ_CMJ_Original_files/
 ├── check_consistency.py        (Analiza)
 ├── cleanup_empty_columns.py    (Čišćenje)
 ├── organize_backups.py         (Organizacija)
+├── calculate_fp_kpis.py        (Jezgra analize – koriste je plotovi i ostale skripte)
 │
-├── check_files.py              (Zastarjeli)
-└── fix_06_3_2.py              (Opciono)
+├── tests/                     (Test skripte – development/validacija)
+└── archive/                   (Jednokratne provjere – referenca)
 ```
 
 ---
