@@ -176,7 +176,9 @@ def test_cmj_onset(filepath: Path):
 
 
 def main():
-    filepath = Path(r"C:\Users\dmirk\A_Cursor_Projekti\SJ_CMJ_Qualisys_AMTI\CMJ_ForcePlates\03_4_3.txt")
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+    from paths_config import CMJ_FORCE_PLATES
+    filepath = CMJ_FORCE_PLATES / "03_4_3.txt"
     
     if filepath.exists():
         test_cmj_onset(filepath)

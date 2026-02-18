@@ -31,6 +31,9 @@ SJ_Qualisys_CoM/
 CMJ_Qualisys_CoM/
 processed_data/
 
+# User-specific paths (kopiraj iz paths_config.example.py)
+paths_config.py
+
 # Ostalo
 *.log
 .DS_Store

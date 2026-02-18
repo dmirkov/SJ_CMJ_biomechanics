@@ -446,19 +446,11 @@ def plot_jump(filepath: Path, output_dir: Path, jump_type: int):
 def main():
     base_path = Path(__file__).parent
     
-    # Input folderi
-    sj_fp_dir = base_path.parent / "SJ_Force_Plate"
-    cmj_fp_dir = base_path.parent / "CMJ_Force_Plate"
-    
-    # Ako ne postoje na tom mestu, probaj alternativne putanje
-    if not sj_fp_dir.exists():
-        sj_fp_dir = Path(r"C:\Users\dmirk\A_Cursor_Projekti\SJ_CMJ_Qualisys_AMTI\SJ_ForcePlates")
-    if not cmj_fp_dir.exists():
-        cmj_fp_dir = Path(r"C:\Users\dmirk\A_Cursor_Projekti\SJ_CMJ_Qualisys_AMTI\CMJ_ForcePlates")
-    
-    # Output folderi
-    sj_plot_dir = base_path / "Output" / "Plots" / "SJ_FP"
-    cmj_plot_dir = base_path / "Output" / "Plots" / "CMJ_FP"
+    from paths_config import SJ_FORCE_PLATES, CMJ_FORCE_PLATES, OUTPUT_DIR
+    sj_fp_dir = SJ_FORCE_PLATES
+    cmj_fp_dir = CMJ_FORCE_PLATES
+    sj_plot_dir = OUTPUT_DIR / "Plots" / "SJ_FP"
+    cmj_plot_dir = OUTPUT_DIR / "Plots" / "CMJ_FP"
     
     sj_plot_dir.mkdir(parents=True, exist_ok=True)
     cmj_plot_dir.mkdir(parents=True, exist_ok=True)

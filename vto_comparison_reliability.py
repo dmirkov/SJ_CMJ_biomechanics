@@ -370,10 +370,11 @@ def signal_reliability_metrics(v_fp, v_q):
 
 def run_signal_reliability(base_path: Path):
     """Izračunaj pouzdanost signala za parove FP–Qualisys (onset → landing)."""
-    sj_fp_dir = base_path / "SJ_ForcePlates"
-    cmj_fp_dir = base_path / "CMJ_ForcePlates"
-    sj_q_dir = base_path / "SJ_Qualisys_CoM"
-    cmj_q_dir = base_path / "CMJ_Qualisys_CoM"
+    from paths_config import SJ_FORCE_PLATES, CMJ_FORCE_PLATES, SJ_QUALISYS_COM, CMJ_QUALISYS_COM
+    sj_fp_dir = SJ_FORCE_PLATES
+    cmj_fp_dir = CMJ_FORCE_PLATES
+    sj_q_dir = SJ_QUALISYS_COM
+    cmj_q_dir = CMJ_QUALISYS_COM
     
     all_results = []
     
@@ -416,9 +417,9 @@ def run_signal_reliability(base_path: Path):
 
 
 def main():
-    base_path = Path(__file__).parent
-    excel_file = base_path / "Output" / "Excel" / "MoCap_KPIs.xlsx"
-    output_dir = base_path / "Output"
+    from paths_config import EXCEL_DIR, OUTPUT_DIR
+    excel_file = EXCEL_DIR / "MoCap_KPIs.xlsx"
+    output_dir = OUTPUT_DIR
     output_dir.mkdir(parents=True, exist_ok=True)
     
     print("=" * 90)
@@ -476,7 +477,7 @@ def main():
     print("2. POUZDANOST NA NIVOU SIGNALA BRZINE (onset do najniza tacka landing-a)")
     print("=" * 90)
     
-    rel_df = run_signal_reliability(base_path)
+    rel_df = run_signal_reliability(Path(__file__).parent)
     
     if len(rel_df) == 0:
         print("[WARNING] Nema parova FP–Qualisys za analizu signala")

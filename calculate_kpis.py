@@ -13,8 +13,7 @@ import subprocess
 from pathlib import Path
 from datetime import datetime
 
-# Import iz drugog projekta
-sys.path.insert(0, r"C:\Users\dmirk\A_Cursor_Projekti\SJ_CMJ_Qualisys_AMTI")
+sys.path.insert(0, str(Path(__file__).parent / "lib"))
 import config
 
 
@@ -24,9 +23,8 @@ def run_prepare_data():
     print("KORAK 1: PRIprema PODATAKA")
     print("=" * 90)
     
-    # Proveri da li processed_data već postoji
-    base_path = Path(__file__).parent
-    processed_data_dir = base_path / "processed_data"
+    from paths_config import PROCESSED_DATA_DIR
+    processed_data_dir = PROCESSED_DATA_DIR
     
     if processed_data_dir.exists():
         processed_files = list(processed_data_dir.glob("*_processed.tsv"))
@@ -74,20 +72,9 @@ def run_kpi_calculation():
     print("KORAK 2: IZRACUNAVANJE KPIs")
     print("=" * 90)
     
-    # Primeni config iz drugog projekta
-    # Ažuriraj processed_data_dir da pokazuje na naš lokalni folder
-    base_path = Path(__file__).parent
-    processed_data_dir = base_path / "processed_data"
-    
-    # Ako processed_data ne postoji lokalno, koristi iz drugog projekta
-    if not processed_data_dir.exists():
-        processed_data_dir = Path(r"C:\Users\dmirk\A_Cursor_Projekti\SJ_CMJ_Qualisys_AMTI\processed_data")
-    
-    # Ažuriraj config
-    config.PROCESSED_DATA_DIR = processed_data_dir
-    
-    # Output Excel fajl u našem folderu
-    output_excel = base_path / "Output" / "Excel" / "MoCap_KPIs.xlsx"
+    from paths_config import PROCESSED_DATA_DIR, EXCEL_DIR
+    config.PROCESSED_DATA_DIR = PROCESSED_DATA_DIR
+    output_excel = EXCEL_DIR / "MoCap_KPIs.xlsx"
     output_excel.parent.mkdir(parents=True, exist_ok=True)
     config.EXCEL_OUTPUT_FILE = output_excel
     
@@ -131,7 +118,8 @@ def main():
     print("=" * 90)
     print(f"Vreme završetka: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
     
-    output_excel = base_path / "Output" / "Excel" / "MoCap_KPIs.xlsx"
+    from paths_config import EXCEL_DIR
+    output_excel = EXCEL_DIR / "MoCap_KPIs.xlsx"
     if output_excel.exists():
         print(f"\n[SUCCESS] Excel fajl sa KPIs je kreiran!")
         print(f"Lokacija: {output_excel}")

@@ -29,7 +29,7 @@ try:
     )
 except ImportError:
     # Ako ne postoji lokalno, importuj iz drugog projekta
-    sys.path.insert(0, r"C:\Users\dmirk\A_Cursor_Projekti\SJ_CMJ_Qualisys_AMTI")
+    sys.path.insert(0, str(Path(__file__).parent / "lib"))
     from mocap_com_v2_sexmap import (
         read_qualisys_tsv,
         add_com_columns,
@@ -179,14 +179,11 @@ def process_tsv_file(input_file: Path, output_file: Path) -> Tuple[bool, str]:
 
 
 def main():
-    base_path = Path(__file__).parent
-    
-    # Input i output folderi
-    cmj_input = base_path / "CMJ_Qualisys"
-    sj_input = base_path / "SJ_Qualisys"
-    
-    cmj_output = base_path / "CMJ_Qualisys_CoM"
-    sj_output = base_path / "SJ_Qualisys_CoM"
+    from paths_config import CMJ_QUALISYS, SJ_QUALISYS, CMJ_QUALISYS_COM, SJ_QUALISYS_COM
+    cmj_input = CMJ_QUALISYS
+    sj_input = SJ_QUALISYS
+    cmj_output = CMJ_QUALISYS_COM
+    sj_output = SJ_QUALISYS_COM
     
     print("=" * 90)
     print("DODAVANJE CoM KOLONA U TSV FAJLOVE")

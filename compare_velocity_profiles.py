@@ -23,8 +23,8 @@ from calculate_fp_kpis import (
     butter_lowpass_filter, CONFIG, analyze_jump
 )
 
-# Import funkcije za Qualisys
-sys.path.insert(0, r"C:\Users\dmirk\A_Cursor_Projekti\SJ_CMJ_Qualisys_AMTI")
+# Import za Qualisys (lib)
+sys.path.insert(0, str(Path(__file__).parent / "lib"))
 try:
     import config as qualisys_config
 except:
@@ -466,7 +466,7 @@ def plot_velocity_comparison(qualisys_file: Path, fp_file: Path, output_dir: Pat
             # Pokušaj da importuje modul za izračunavanje CoM-a
             try:
                 import sys
-                sys.path.insert(0, r"C:\Users\dmirk\A_Cursor_Projekti\SJ_CMJ_Qualisys_AMTI")
+                sys.path.insert(0, str(Path(__file__).parent / "lib"))
                 from mocap_com_v2_sexmap import add_com_columns, parse_subject_id_from_filename
                 
                 # Ekstraktuj SubjectID iz imena fajla
@@ -670,18 +670,13 @@ def plot_velocity_comparison(qualisys_file: Path, fp_file: Path, output_dir: Pat
 
 
 def main():
-    base_path = Path(__file__).parent
-    
-    # Input folderi
-    sj_qualisys_dir = base_path / "SJ_Qualisys_CoM"
-    cmj_qualisys_dir = base_path / "CMJ_Qualisys_CoM"
-    
-    sj_fp_dir = base_path / "SJ_ForcePlates"
-    cmj_fp_dir = base_path / "CMJ_ForcePlates"
-    
-    # Output folderi
-    sj_output_dir = base_path / "Output" / "Velocity_Comparison" / "SJ"
-    cmj_output_dir = base_path / "Output" / "Velocity_Comparison" / "CMJ"
+    from paths_config import SJ_QUALISYS_COM, CMJ_QUALISYS_COM, SJ_FORCE_PLATES, CMJ_FORCE_PLATES, OUTPUT_DIR
+    sj_qualisys_dir = SJ_QUALISYS_COM
+    cmj_qualisys_dir = CMJ_QUALISYS_COM
+    sj_fp_dir = SJ_FORCE_PLATES
+    cmj_fp_dir = CMJ_FORCE_PLATES
+    sj_output_dir = OUTPUT_DIR / "Velocity_Comparison" / "SJ"
+    cmj_output_dir = OUTPUT_DIR / "Velocity_Comparison" / "CMJ"
     
     sj_output_dir.mkdir(parents=True, exist_ok=True)
     cmj_output_dir.mkdir(parents=True, exist_ok=True)

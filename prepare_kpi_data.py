@@ -13,8 +13,7 @@ import pandas as pd
 from pathlib import Path
 from typing import Tuple, Optional
 
-# Import iz drugog projekta
-sys.path.insert(0, r"C:\Users\dmirk\A_Cursor_Projekti\SJ_CMJ_Qualisys_AMTI")
+sys.path.insert(0, str(Path(__file__).parent / "lib"))
 import config
 
 
@@ -193,15 +192,10 @@ def process_file(input_file: Path, output_dir: Path) -> Tuple[bool, str]:
 
 
 def main():
-    base_path = Path(__file__).parent
-    
-    # Input folderi (sa CoM kolonama)
-    cmj_input = base_path / "CMJ_Qualisys_CoM"
-    sj_input = base_path / "SJ_Qualisys_CoM"
-    
-    # Output folder (processed_data)
-    # Koristimo processed_data folder iz drugog projekta ili lokalni
-    output_dir = base_path / "processed_data"
+    from paths_config import CMJ_QUALISYS_COM, SJ_QUALISYS_COM, PROCESSED_DATA_DIR
+    cmj_input = CMJ_QUALISYS_COM
+    sj_input = SJ_QUALISYS_COM
+    output_dir = PROCESSED_DATA_DIR
     
     print("=" * 90)
     print("PREPARACIJA PODATAKA ZA KPI IZRACUNAVANJE")

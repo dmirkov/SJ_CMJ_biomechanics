@@ -452,15 +452,11 @@ def create_final_plot(filepath: Path, jump_type: int, output_dir: Path):
 
 
 def main():
-    base_path = Path(__file__).parent
-    
-    # Force Plate folderi (lokalni)
-    sj_fp_dir = base_path / "SJ_ForcePlates"
-    cmj_fp_dir = base_path / "CMJ_ForcePlates"
-    
-    # Output folderi
-    sj_output_dir = base_path / "Output" / "Final_Plots" / "SJ"
-    cmj_output_dir = base_path / "Output" / "Final_Plots" / "CMJ"
+    from paths_config import SJ_FORCE_PLATES, CMJ_FORCE_PLATES, OUTPUT_DIR
+    sj_fp_dir = SJ_FORCE_PLATES
+    cmj_fp_dir = CMJ_FORCE_PLATES
+    sj_output_dir = OUTPUT_DIR / "Final_Plots" / "SJ"
+    cmj_output_dir = OUTPUT_DIR / "Final_Plots" / "CMJ"
     
     print("=" * 90)
     print("KREIRANJE FINALNIH PLOTOVA SA SVIM KARAKTERISTIČNIM TAČKAMA")

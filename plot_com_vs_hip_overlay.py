@@ -11,7 +11,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from pathlib import Path
 
-sys.path.insert(0, r"C:\Users\dmirk\A_Cursor_Projekti\SJ_CMJ_Qualisys_AMTI")
+sys.path.insert(0, str(Path(__file__).parent / "lib"))
 from file_discovery import discover_processed_files, load_processed_file
 from kpi_calculator import calculate_kpis
 import config
@@ -128,14 +128,10 @@ def plot_com_hip_overlay(df, kpis, jump_type, trial_id, output_path):
 
 
 def main():
-    base = Path(__file__).parent
-    proc = base / "processed_data"
-    if not proc.exists():
-        proc = Path(r"C:\Users\dmirk\A_Cursor_Projekti\SJ_CMJ_Qualisys_AMTI\processed_data")
-    config.PROCESSED_DATA_DIR = proc
-
-    files = discover_processed_files(proc)
-    out_dir = base / "Output" / "Plots" / "CoM_vs_Hip"
+    from paths_config import PROCESSED_DATA_DIR, OUTPUT_DIR
+    config.PROCESSED_DATA_DIR = PROCESSED_DATA_DIR
+    files = discover_processed_files(PROCESSED_DATA_DIR)
+    out_dir = OUTPUT_DIR / "Plots" / "CoM_vs_Hip"
     out_dir.mkdir(parents=True, exist_ok=True)
 
     examples = [

@@ -308,12 +308,12 @@ def detect_outliers_iqr(series, k=1.5):
 
 
 def main():
-    base = Path(__file__).parent
-    fp_dirs = {'SJ': base / "SJ_ForcePlates", 'CMJ': base / "CMJ_ForcePlates"}
-    q_dirs = {'SJ': base / "SJ_Qualisys_CoM", 'CMJ': base / "CMJ_Qualisys_CoM"}
-    out_dir = base / "Output" / "Velocity_Comparison"
+    from paths_config import SJ_FORCE_PLATES, CMJ_FORCE_PLATES, SJ_QUALISYS_COM, CMJ_QUALISYS_COM, OUTPUT_DIR
+    fp_dirs = {'SJ': SJ_FORCE_PLATES, 'CMJ': CMJ_FORCE_PLATES}
+    q_dirs = {'SJ': SJ_QUALISYS_COM, 'CMJ': CMJ_QUALISYS_COM}
+    out_dir = OUTPUT_DIR / "Velocity_Comparison"
     out_dir.mkdir(parents=True, exist_ok=True)
-    out_excel = base / "Output" / "Excel"
+    out_excel = OUTPUT_DIR / "Excel"
     out_excel.mkdir(parents=True, exist_ok=True)
 
     print("=" * 90)

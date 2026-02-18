@@ -237,8 +237,10 @@ def main():
     base_path = Path(__file__).parent.parent
     
     # Input folderi
-    sj_fp_dir = Path(r"C:\Users\dmirk\A_Cursor_Projekti\SJ_CMJ_Qualisys_AMTI\SJ_ForcePlates")
-    cmj_fp_dir = Path(r"C:\Users\dmirk\A_Cursor_Projekti\SJ_CMJ_Qualisys_AMTI\CMJ_ForcePlates")
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+    from paths_config import SJ_FORCE_PLATES, CMJ_FORCE_PLATES
+    sj_fp_dir = SJ_FORCE_PLATES
+    cmj_fp_dir = CMJ_FORCE_PLATES
     
     # Output folderi
     sj_bw_dir = base_path / "Output" / "BW_Check" / "SJ_FP"

@@ -21,7 +21,7 @@ from typing import Dict, Optional, Tuple
 import importlib.util
 
 # Import iz SJ_CMJ_Qualisys_AMTI
-sys.path.insert(0, r"C:\Users\dmirk\A_Cursor_Projekti\SJ_CMJ_Qualisys_AMTI")
+sys.path.insert(0, str(Path(__file__).parent / "lib"))
 from file_discovery import discover_processed_files, load_processed_file
 from kpi_calculator import calculate_kpis
 
@@ -414,16 +414,14 @@ def main():
     parser.add_argument("--cmj-only", action="store_true", help="Samo CMJ fajlovi")
     args = parser.parse_args()
 
-    base = Path(__file__).parent
-    proc_dir = base / "processed_data"
+    from paths_config import PROCESSED_DATA_DIR, OUTPUT_DIR
+    proc_dir = PROCESSED_DATA_DIR
     if not proc_dir.exists():
-        proc_dir = Path(r"C:\Users\dmirk\A_Cursor_Projekti\SJ_CMJ_Qualisys_AMTI\processed_data")
-    if not proc_dir.exists():
-        print("[ERROR] processed_data nije pronađen")
+        print("[ERROR] processed_data nije pronađen:", proc_dir)
         return 1
     import config as qconfig
     qconfig.PROCESSED_DATA_DIR = proc_dir
-    output_path = base / "Output" / "Plots_Angles"
+    output_path = OUTPUT_DIR / "Plots_Angles"
     output_path.mkdir(parents=True, exist_ok=True)
     print(f"Output: {output_path}")
     files = discover_processed_files(proc_dir)

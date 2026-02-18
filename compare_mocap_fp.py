@@ -11,7 +11,7 @@ from pathlib import Path
 import pandas as pd
 
 # MoCap
-sys.path.insert(0, r"C:\Users\dmirk\A_Cursor_Projekti\SJ_CMJ_Qualisys_AMTI")
+sys.path.insert(0, str(Path(__file__).parent / "lib"))
 from file_discovery import discover_processed_files, load_processed_file
 from kpi_calculator import calculate_kpis
 import config
@@ -233,14 +233,11 @@ def print_comparison(df: pd.DataFrame):
 
 
 def main():
-    base = Path(__file__).parent
-    proc = base / "processed_data"
-    if not proc.exists():
-        proc = Path(r"C:\Users\dmirk\A_Cursor_Projekti\SJ_CMJ_Qualisys_AMTI\processed_data")
-
-    # Sakupljanje podataka
+    from paths_config import PROCESSED_DATA_DIR, DATA_ROOT, EXCEL_DIR
+    proc = PROCESSED_DATA_DIR
+    fp_base = DATA_ROOT
     mocap = collect_mocap(proc)
-    fp_data = collect_fp(base)
+    fp_data = collect_fp(fp_base)
 
     if not mocap and not fp_data:
         print("[ERROR] Nema podataka za poređenje.")
@@ -253,9 +250,8 @@ def main():
     print_comparison(df)
 
     # Export u Excel
-    excel_dir = base / "Output" / "Excel"
-    excel_dir.mkdir(parents=True, exist_ok=True)
-    excel_path = excel_dir / "MoCap_FP_Comparison.xlsx"
+    EXCEL_DIR.mkdir(parents=True, exist_ok=True)
+    excel_path = EXCEL_DIR / "MoCap_FP_Comparison.xlsx"
     cm_hip_cols = [c for c in df.columns if any(x in c for x in ["CoM", "hip", "Hip", "Depth", "t_start", "T_down", "T_up", "TTO", "vmin_pre", "vmax_pre"])]
     df_sj = df[df["Type"] == "SJ"].copy()
     df_cmj = df[df["Type"] == "CMJ"].copy()

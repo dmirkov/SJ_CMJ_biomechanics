@@ -1091,15 +1091,10 @@ def process_force_plate_files(fp_dir: Path, jump_type_name: str):
 
 
 def main():
-    base_path = Path(__file__).parent
-    
-    # Force Plate folderi (koristi lokalne ako postoje)
-    base = base_path
-    sj_fp_dir = base / "SJ_ForcePlates"
-    cmj_fp_dir = base / "CMJ_ForcePlates"
-    
-    # Excel fajl za ažuriranje
-    excel_file = base_path / "Output" / "Excel" / "MoCap_KPIs.xlsx"
+    from paths_config import SJ_FORCE_PLATES, CMJ_FORCE_PLATES, EXCEL_DIR
+    sj_fp_dir = SJ_FORCE_PLATES
+    cmj_fp_dir = CMJ_FORCE_PLATES
+    excel_file = EXCEL_DIR / "MoCap_KPIs.xlsx"
     
     print("=" * 90)
     print("IZRACUNAVANJE KPIs IZ FORCE PLATE PODATAKA")

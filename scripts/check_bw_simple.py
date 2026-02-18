@@ -12,8 +12,9 @@ from pathlib import Path
 
 
 def main():
-    base_path = Path(__file__).parent.parent
-    excel_file = base_path / "Output" / "Excel" / "MoCap_KPIs.xlsx"
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+    from paths_config import EXCEL_DIR
+    excel_file = EXCEL_DIR / "MoCap_KPIs.xlsx"
     
     print("=" * 90)
     print("PROVERA BW VREDNOSTI")
