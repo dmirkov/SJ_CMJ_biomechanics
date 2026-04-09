@@ -259,11 +259,35 @@ def calculate_body_weight(force, fs):
 def read_force_file(filepath):
     """Read AMTI force plate file."""
     try:
-        # Pokušaj sa različitim separatorima
-        try:
-            df = pd.read_csv(filepath, skiprows=1, header=None, sep=None, engine='python', decimal=',')
-        except:
-            df = pd.read_csv(filepath, skiprows=1, header=None, sep=',', decimal=',')
+        # Pokušaj sa različitim separatorima/encoding opcijama
+        # Neki AMTI fajlovi imaju latin-1 znakove ili nemaju header red.
+        read_attempts = [
+            {'skiprows': 1, 'header': None, 'sep': None, 'engine': 'python', 'decimal': ',', 'encoding': 'utf-8'},
+            {'skiprows': 1, 'header': None, 'sep': ',', 'decimal': ',', 'encoding': 'utf-8'},
+            {'skiprows': 0, 'header': None, 'sep': None, 'engine': 'python', 'decimal': ',', 'encoding': 'utf-8'},
+            {'skiprows': 0, 'header': None, 'sep': ',', 'decimal': ',', 'encoding': 'utf-8'},
+            {'skiprows': 1, 'header': None, 'sep': None, 'engine': 'python', 'decimal': ',', 'encoding': 'latin1'},
+            {'skiprows': 1, 'header': None, 'sep': ',', 'decimal': ',', 'encoding': 'latin1'},
+            {'skiprows': 0, 'header': None, 'sep': None, 'engine': 'python', 'decimal': ',', 'encoding': 'latin1'},
+            {'skiprows': 0, 'header': None, 'sep': ',', 'decimal': ',', 'encoding': 'latin1'},
+        ]
+
+        df = None
+        last_error = None
+        for kwargs in read_attempts:
+            try:
+                df_candidate = pd.read_csv(filepath, **kwargs)
+                if df_candidate is not None and not df_candidate.empty and df_candidate.shape[1] >= 2:
+                    df = df_candidate
+                    break
+            except Exception as e:
+                last_error = e
+                continue
+        
+        if df is None:
+            if last_error is not None:
+                raise last_error
+            raise ValueError("No valid data columns found")
         
         if df.shape[1] >= 9:
             col_L, col_R = 2, 8
@@ -281,7 +305,58 @@ def read_force_file(filepath):
         return None, None
 
 
-def analyze_jump(f_tot_raw, f_L_raw, f_R_raw, fs, jump_type, file_id):
+def detect_onset_robust(force, bw, bw_sd, fs, search_end_idx, jump_type):
+    """
+    Robust onset detection with sustained threshold crossing.
+    - CMJ: onset when force starts sustained unloading (below BW band)
+    - SJ: onset when force starts sustained loading (above BW band)
+    """
+    n = len(force)
+    if n == 0:
+        return 0
+    search_end_idx = int(np.clip(search_end_idx, 1, n - 1))
+
+    min_stable_period = int(0.30 * fs)
+    start_idx = min(min_stable_period, max(0, search_end_idx - 1))
+    if search_end_idx <= start_idx + 5:
+        start_idx = 0
+
+    threshold_n = max(2.5 * bw_sd, 15.0)
+    baseline_band = max(1.5 * bw_sd, 10.0)
+    sustain_n = max(int(0.020 * fs), 8)  # ~20 ms
+    back_window = max(int(0.250 * fs), sustain_n)
+
+    if jump_type == 2:  # CMJ -> unloading first
+        trigger_mask = force[start_idx:search_end_idx] < (bw - threshold_n)
+    else:  # SJ -> loading first
+        trigger_mask = force[start_idx:search_end_idx] > (bw + threshold_n)
+
+    if len(trigger_mask) < sustain_n:
+        return start_idx
+
+    # Find first sustained trigger period
+    trigger_int = trigger_mask.astype(int)
+    rolling = np.convolve(trigger_int, np.ones(sustain_n, dtype=int), mode='valid')
+    sustained_hits = np.where(rolling >= sustain_n)[0]
+    if len(sustained_hits) == 0:
+        return start_idx
+
+    crossing_abs = start_idx + int(sustained_hits[0])
+
+    # Backtrack to last baseline sample right before movement starts
+    b0 = max(start_idx, crossing_abs - back_window)
+    baseline_slice = force[b0:crossing_abs + 1]
+    in_baseline = (baseline_slice >= (bw - baseline_band)) & (baseline_slice <= (bw + baseline_band))
+    baseline_idxs = np.where(in_baseline)[0]
+    if len(baseline_idxs) > 0:
+        onset_abs = b0 + int(baseline_idxs[-1])
+    else:
+        onset_abs = crossing_abs
+
+    return int(np.clip(onset_abs, 0, n - 1))
+
+
+def analyze_jump(f_tot_raw, f_L_raw, f_R_raw, fs, jump_type, file_id, return_timeseries=False):
     """Perform full biomechanical analysis on a single trial (from VJ_1_1.py)."""
     
     # QC Flags - inicijalizuj na početku
@@ -371,7 +446,7 @@ def analyze_jump(f_tot_raw, f_L_raw, f_R_raw, fs, jump_type, file_id):
                 idx_H_abs = i - 1
             break
     
-    # Onset (A) - NOVA LOGIKA u ORIGINALNOM signalu
+    # Onset (A) - robust sustained-threshold logika
     idx_A_abs = 0
     
     if jump_type == 1:  # SJ (Squat Jump)
@@ -521,6 +596,13 @@ def analyze_jump(f_tot_raw, f_L_raw, f_R_raw, fs, jump_type, file_id):
             unweighting_min_abs = idx_A_abs + np.argmin(segment_between) if len(segment_between) > 0 else idx_A_abs
         else:
             unweighting_min_abs = idx_A_abs
+
+    # Zavrsna validacija za onset
+    # Mora biti pre takeoff-a i pre unweighting minimuma (ako postoji)
+    if idx_A_abs >= idx_F_abs:
+        idx_A_abs = max(0, idx_F_abs - int(0.05 * fs))
+    if 'unweighting_min_abs' in locals() and unweighting_min_abs is not None and idx_A_abs >= unweighting_min_abs:
+        idx_A_abs = max(0, unweighting_min_abs - int(0.03 * fs))
     
     # E. Cropping oko skoka (za dalju analizu i integraciju)
     # Cropuj oko onset-a i landing-a sa padding-om
@@ -968,6 +1050,35 @@ def analyze_jump(f_tot_raw, f_L_raw, f_R_raw, fs, jump_type, file_id):
     m['invalid_events'] = qc_flags['invalid_events']
     m['invalid_jump'] = qc_flags['has_countermovement'] or qc_flags['negative_vto'] or qc_flags['invalid_events'] or (m['v_to'] <= 0)
     m['qc_notes'] = qc_flags['notes']
+    
+    # Optional export internog signala za dodatne analize/plotovanje.
+    # Podrazumevano je isključeno da bi postojeći tok ostao nepromenjen.
+    if return_timeseries:
+        m['_timeseries'] = {
+            'time': t_crop,
+            'force': f_crop,
+            'force_left': fL_crop,
+            'force_right': fR_crop,
+            'force_full': force,
+            'force_left_full': force_L,
+            'force_right_full': force_R,
+            'acc': acc,
+            'vel': vel,
+            'disp': disp,
+            'idx': idx,
+            'idx_abs': {
+                'A': idx_A_abs,
+                'F': idx_F_abs,
+                'H': idx_H_abs,
+                'min': idx_abs_min,
+                'propulsion_peak': propulsion_peak_abs,
+                'landing_peak': landing_peak_abs,
+                'B': unweighting_min_abs if 'unweighting_min_abs' in locals() else None
+            },
+            'start_crop': start_crop,
+            'end_crop': end_crop,
+            'fs': fs
+        }
     
     return m
 
