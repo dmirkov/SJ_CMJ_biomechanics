@@ -276,9 +276,19 @@ def calculate_kpis(df: pd.DataFrame, jump_type: str, model: str,
     # Visine skoka
     t_apex = np.nan
     hcom = np.nan
+    hcom_max_to = np.nan
+    hcom_onset_corr = np.nan
+    hcom_upright_ref = np.nan
     hv = np.nan
     hft = np.nan
     hcom_ankle_corr = np.nan  # (hmax_CoM - honset_CoM) - (hAnkle_TO - hAnkle_onset)
+    z_to = np.nan
+    z_apex = np.nan
+    z_upright_ref = np.nan
+
+    # Constants used across height corrections
+    SJ_UPRIGHT_WIN_START = 0.3  # s after landing
+    SJ_UPRIGHT_WIN_END = 1.2    # s after landing
     
     if not np.isnan(t_to) and not np.isnan(t_land):
         mask = (time >= t_to) & (time <= t_land)
@@ -297,6 +307,65 @@ def calculate_kpis(df: pd.DataFrame, jump_type: str, model: str,
                 # hFT iz flight time
                 if t_flight > 0:
                     hft = config.G * (t_flight ** 2) / 8.0
+
+    # Upright CoM reference (independent of ankle markers)
+    # - SJ: upright posture AFTER landing (if recorded)
+    #       Use a short averaging zone around the detected upright point, instead of one sample.
+    # - CMJ: typically already upright before onset, so we don't use this by default here
+    if jump_type == 'SJ' and not np.isnan(t_land):
+        t_win_start = t_land + SJ_UPRIGHT_WIN_START
+        t_win_end = min(time[-1], t_land + SJ_UPRIGHT_WIN_END)
+        mask_upright = (time >= t_win_start) & (time <= t_win_end)
+        if np.any(mask_upright):
+            # 1) detect upright point as maximum CoM in the post-landing upright window
+            idx_rel = int(np.argmax(com_z[mask_upright]))
+            t_upright_point = float(time[mask_upright][idx_rel])
+            i_center = int(np.argmin(np.abs(time - t_upright_point)))
+
+            # 2) compute local mean in a short zone around that point (robust against sample noise)
+            #    default half-window: 50 ms each side (total 100 ms zone)
+            zone_half_s = 0.05
+            n_half = max(int(zone_half_s * fs), 1)
+            i0 = max(0, i_center - n_half)
+            i1 = min(len(com_z), i_center + n_half + 1)
+            z_upright_ref = float(np.mean(com_z[i0:i1]))
+
+    # Dodatni CoM KPI:
+    # 1) hCoM_max_TO = (z_apex u flight-u) - z_TO
+    #    (flight-only; izbegava post-landing "upright" maksimume)
+    # 2) hCoM_onset_corr:
+    #    CMJ: korekcija za pre-TO uspon -> hCoM_max_TO - (z_TO - z_onset)
+    #    SJ: korekcija u odnosu na upright referencu (posle landing-a), koristeci i z_TO:
+    #        hCoM_onset_corr = hCoM_max_TO + (z_TO - z_upright_ref) = z_apex - z_upright_ref
+    if not np.isnan(t_to):
+        if np.isnan(z_to):
+            z_to = np.interp(t_to, time, com_z)
+
+        # flight-only max (prefer z_apex already computed)
+        z_max_flight = np.nan
+        if not np.isnan(z_apex):
+            z_max_flight = z_apex
+        elif not np.isnan(t_land):
+            flight_mask = (time >= t_to) & (time <= t_land)
+            if np.any(flight_mask):
+                z_max_flight = np.max(com_z[flight_mask])
+
+        if not np.isnan(z_max_flight):
+            hcom_max_to = z_max_flight - z_to
+
+            if jump_type == 'CMJ' and not np.isnan(t_start):
+                z_start = np.interp(t_start, time, com_z)
+                pre_to_rise = z_to - z_start
+                hcom_onset_corr = hcom_max_to - pre_to_rise
+            else:
+                if jump_type == 'SJ' and not np.isnan(z_upright_ref):
+                    hcom_onset_corr = hcom_max_to + (z_to - z_upright_ref)
+                else:
+                    hcom_onset_corr = hcom_max_to
+
+            # Optional explicit upright-referenced height (same quantity as the SJ correction above)
+            if not np.isnan(z_upright_ref):
+                hcom_upright_ref = z_max_flight - z_upright_ref
     
     if not np.isnan(vto):
         hv = (vto ** 2) / (2 * config.G)
@@ -306,8 +375,6 @@ def calculate_kpis(df: pd.DataFrame, jump_type: str, model: str,
     # CMJ: z_ref = polozaj 0.2s pre onseta (ankle miran, uspravan).
     # SJ: z_ref = uspravan polozaj nakon leta (CoM i ankle kad se ispitanik uspravio).
     ANKLE_REF_OFFSET_S = 0.2  # s pre onseta za CMJ
-    SJ_UPRIGHT_WIN_START = 0.3  # s posle landing
-    SJ_UPRIGHT_WIN_END = 1.2   # s posle landing
     ankle_cols = []
     if model == '3D':
         ankle_cols = ['left_ankle_pos_Z', 'right_ankle_pos_Z']
@@ -338,6 +405,13 @@ def calculate_kpis(df: pd.DataFrame, jump_type: str, model: str,
                 com_rise = hmax_com - z_com_ref
                 ankle_rise = hankle_to - z_ankle_ref
                 hcom_ankle_corr = com_rise - ankle_rise
+
+                # SJ "upright reference" height:
+                # If the subject starts in a squat (low CoM) and returns to upright after landing,
+                # we can compute height relative to that upright reference posture.
+                # (For CMJ, t_ref is pre-onset upright; for SJ, t_ref is post-landing upright.)
+                if not np.isnan(z_apex):
+                    hcom_upright_ref = z_apex - z_com_ref
     
     # ========== HIP-BASED KPIs (isto kao CoM, ali za hip centar) ==========
     t_start_hip = np.nan
@@ -564,6 +638,9 @@ def calculate_kpis(df: pd.DataFrame, jump_type: str, model: str,
         'vmax_pre': vmax_pre,
         'vTO': vto,
         'hCoM': hcom,
+        'hCoM_max_TO': hcom_max_to,
+        'hCoM_onset_corr': hcom_onset_corr,
+        'hCoM_upright_ref': hcom_upright_ref,
         'hCoM_ankle_corr': hcom_ankle_corr,
         'hv': hv,
         'hFT': hft,

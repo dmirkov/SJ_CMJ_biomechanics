@@ -8,7 +8,10 @@ from pathlib import Path
 PAIR_MAP = [
     ("V_Takeoff_ms", "vTO", "vTO"),
     ("Height_V_m", "hv", "height_velocity"),
+    ("Height_Impulse_m", "hv", "height_impulse_velocity"),
     ("Height_T_m", "hFT", "height_flight_time"),
+    ("Height_V_m", "hCoM_max_TO", "height_com_max_minus_to"),
+    ("Height_V_m", "hCoM_ankle_corr", "height_ankle_corrected"),
     ("Depth_Max_m", "Depth_CMJ", "depth"),
 ]
 

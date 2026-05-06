@@ -93,7 +93,7 @@ EXCEL_COLUMNS_BASE = [
     'T_downward', 'T_upward', 'TTO', 'T_flight',
     'T_ecc', 'T_con', 'T_takeoff', 'T_con_strict', 'T_takeoff_obs',
     'Depth_CMJ', 'vmin_pre', 'vmax_pre', 'vTO',
-    'hCoM', 'hCoM_ankle_corr', 'hv', 'hFT',
+    'hCoM', 'hCoM_max_TO', 'hCoM_onset_corr', 'hCoM_upright_ref', 'hCoM_ankle_corr', 'hv', 'hFT',
     't_start_hip', 't_zmin_hip', 'T_downward_hip', 'T_upward_hip', 'TTO_hip',
     'vmin_pre_hip', 'vmax_pre_hip', 'vTO_hip', 'Depth_CMJ_hip',
     'hHip', 'hHip_ankle_corr', 'hv_hip',

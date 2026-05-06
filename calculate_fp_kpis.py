@@ -1179,6 +1179,7 @@ def process_force_plate_files(fp_dir: Path, jump_type_name: str):
             'dt_PP_s': metrics['dt_PP'],
             'V_Takeoff_ms': metrics['v_to'],
             'Height_V_m': metrics['h_to_v'],
+            'Height_Impulse_m': metrics['h_to_impulse'],
             'Fmax_PP_N': metrics['Fmax_PP'],
             'Power_Max_W': metrics['Pmax_PP'],
             'Power_Avg_W': metrics['Pavg_PP'],
